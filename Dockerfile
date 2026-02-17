@@ -20,10 +20,13 @@ WORKDIR /app
 # Copy dependency files first for better caching
 COPY pyproject.toml ./
 
-# Install dependencies (without lock file)
-RUN uv sync --no-cache
+# Copy source code (needed for editable install)
+COPY research_agent ./research_agent
 
-# Copy application code
+# Install dependencies
+RUN uv sync --no-cache --link-mode copy
+
+# Copy remaining files
 COPY . .
 
 # Set environment variables
