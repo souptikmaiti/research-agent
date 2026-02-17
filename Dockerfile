@@ -35,7 +35,7 @@ ENV PRODUCTION_MODE=True \
     HOME=/tmp
 
 # Expose the port
-EXPOSE 8001
+EXPOSE 8000
 
 # Run the application
 CMD ["uv", "run", "--no-sync", "research-agent"]
