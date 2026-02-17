@@ -136,7 +136,7 @@ server = Server()
             tags=["Search", "Web", "Research"],
             examples=[
                 "My shoulder is swollen and my arm hurts to move, what doctor should I see?",
-                "I have a white rash and no feeling in a leg, who should I see?",
+                "What are the common symptoms of diabetes?",
                 "I have a rash and no fever, what kind of doctor should I see?",
             ]
         ),
