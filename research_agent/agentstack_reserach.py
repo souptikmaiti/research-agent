@@ -1,5 +1,6 @@
 import logging
 import uvicorn
+import asyncio
 from dotenv import load_dotenv
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
 from google.adk.agents import LlmAgent
@@ -61,28 +62,9 @@ class HealthcareResearchAgent:
             tools=[google_search],
         )
         
-        # Initialize session service and runner
-        self.session_service = InMemorySessionService()
-        self.runner = Runner(agent=self.agent, app_name="healthcare", session_service=self.session_service)
-        self.session = None
-        
         logger.info(f"Initialized HealthcareResearchAgent with model={model}, temperature={temperature}")
     
-    async def initialize_session(self, user_id: str = "user", session_id: str = "default"):
-        """Initialize a session for the agent.
-        
-        Args:
-            user_id: User identifier
-            session_id: Session identifier
-        """
-        self.session = await self.session_service.create_session(
-            app_name="healthcare",
-            user_id=user_id,
-            session_id=session_id
-        )
-        logger.info(f"Session initialized: user_id={user_id}, session_id={session_id}")
-
-    async def ask(self, query: str, user_id: str = "user", session_id: str = "default") -> str:
+    def ask(self, query: str, user_id: str = "user", session_id: str = "default") -> str:
         """Ask the agent a healthcare-related question.
         
         Args:
@@ -93,51 +75,42 @@ class HealthcareResearchAgent:
         Returns:
             The agent's final response text
         """
-        # Initialize session if not already done
-        if not self.session:
-            await self.initialize_session(user_id, session_id)
+        # Initialize session service and runner
+        session_service = InMemorySessionService()
+        
+        # Create session (handle async)
+        asyncio.run(session_service.create_session(
+            app_name="healthcare",
+            user_id=user_id,
+            session_id=session_id
+        ))
+        
+        runner = Runner(agent=self.agent, app_name="healthcare", session_service=session_service)
         
         logger.info(f"Received query: {query}")
         
         content = types.Content(role="user", parts=[types.Part(text=query)])
-        final_response_text = "No final text response captured."
         
         try:
-            async for event in self.runner.run_async(
+            for event in runner.run(
                 user_id=user_id,
                 session_id=session_id,
                 new_message=content
             ):
-                logger.info(f"Event ID: {event.id}, Author: {event.author}")
+                logger.debug(f"Event: {event}")
                 
-                # Check for specific parts
-                has_specific_part = False
-                if event.content and event.content.parts:
-                    for part in event.content.parts:
-                        if part.executable_code:
-                            logger.debug(f"Agent generated code:\n{part.executable_code.code}")
-                            has_specific_part = True
-                        elif part.code_execution_result:
-                            logger.debug(f"Code Execution Result: {part.code_execution_result.outcome} - Output:\n{part.code_execution_result.output}")
-                            has_specific_part = True
-                        elif part.text and not part.text.isspace():
-                            logger.debug(f"Text: '{part.text.strip()}'")
-                
-                # Check for final response
-                if not has_specific_part and event.is_final_response():
-                    if event.content and event.content.parts and event.content.parts[0].text:
-                        final_response_text = event.content.parts[0].text.strip()
-                        logger.info(f"Final Agent Response: {final_response_text}")
-                    else:
-                        logger.warning("Final Agent Response: [No text content in final event]")
+                if event.is_final_response() and event.content:
+                    final_answer = event.content.parts[0].text.strip()
+                    logger.info(f"Final Answer: {final_answer}")
+                    return final_answer
         
         except Exception as e:
             logger.error(f"ERROR during agent run: {e}")
             raise
         
-        return final_response_text
+        return "No response generated."
 
-    
+
 
 server = Server()
 
@@ -225,7 +198,7 @@ async def google_search_agent(
     user_id = "user"
     
     # Ask the agent and stream the response
-    response = await agent.ask(prompt, user_id=user_id, session_id=session_id)
+    response = agent.ask(prompt, user_id=user_id, session_id=session_id)
     yield AgentMessage(text=response)
 
 def run():
