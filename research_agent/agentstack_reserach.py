@@ -2,6 +2,7 @@ import logging
 import uvicorn
 import asyncio
 import sys
+import os
 from dotenv import load_dotenv
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
 from google.adk.agents import LlmAgent
@@ -176,11 +177,16 @@ async def healthcare_research_wrapper(
         yield AgentMessage(text="No LLM configuration available from the extension.")
         return
     
+    google_api_key = os.environ.get("GOOGLE_API_KEY")
+    if not google_api_key:
+        yield AgentMessage(text="GOOGLE_API_KEY is required.")
+        return
+    
     yield trajectory.trajectory_metadata(title="Agent Setup", content="Initializing HealthcareResearchAgent with Google search")
     
     agent = HealthcareResearchAgent(model=llm_config.api_model, temperature=0.2)
     
-    session_id = context.run_id or "default"
+    session_id = context.context_id or "default"
     user_id = "user"
     
     # Use async version
