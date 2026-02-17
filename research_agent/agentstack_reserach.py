@@ -52,6 +52,13 @@ Be concise, accurate, and empathetic in your responses."""
 class HealthcareResearchAgent:
     def __init__(self, model: str = "gemini-3-flash-preview", temperature: float = 0.2):
         """Initialize the Healthcare Research Agent."""
+
+        # Strip 'gemini:models/' prefix if present
+        if model.startswith("gemini:models/"):
+            model = model.replace("gemini:models/", "models/")
+        elif model.startswith("gemini:"):
+            model = model.replace("gemini:", "")
+
         self.agent = LlmAgent(
             model=model,
             name="HealthcareResearchAgent",
