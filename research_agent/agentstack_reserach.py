@@ -36,51 +36,6 @@ logger = logging.getLogger("healthcare-research-agent")
 # set root logger
 logging.getLogger().setLevel(logging.DEBUG)
 
-# Custom logging configuration
-LOGGING_CONFIG = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "default": {
-            "format": "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-        },
-    },
-    "handlers": {
-        "default": {
-            "formatter": "default",
-            "class": "logging.StreamHandler",
-            "stream": "ext://sys.stdout",
-        },
-    },
-    "loggers": {
-        "": {  # root logger
-            "handlers": ["default"],
-            "level": "INFO",
-        },
-        "uvicorn": {
-            "handlers": ["default"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "uvicorn.error": {
-            "handlers": ["default"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "uvicorn.access": {
-            "handlers": ["default"],
-            "level": "INFO",
-            "propagate": False,
-        },
-        "healthcare-research-agent": {  # Your app logger
-            "handlers": ["default"],
-            "level": "DEBUG",
-            "propagate": False,
-        },
-    },
-}
-
-
 SYSTEM_PROMPT = """You are a healthcare research assistant. Your role is to:
 
 1. Search for reliable information about diseases, symptoms, and health conditions
@@ -234,11 +189,7 @@ async def healthcare_research_wrapper(
 
 def run():
     server.run(
-        host="127.0.0.1", 
+        host="0.0.0.0", 
         port=8000, 
         context_store=PlatformContextStore(),
-        configure_logger=False,  # Don't let server override our logging config
-        log_config=LOGGING_CONFIG,
-        log_level="debug",
-        access_log=True
     )
