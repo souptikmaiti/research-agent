@@ -1,6 +1,7 @@
 import logging
 import uvicorn
 import asyncio
+import sys
 from dotenv import load_dotenv
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
 from google.adk.agents import LlmAgent
@@ -30,8 +31,18 @@ from a2a.utils.message import get_message_text
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging to output to stdout
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ],
+    force=True  # Override any existing configuration
+)
 logger = logging.getLogger(__name__)
+# set root logger
+logging.getLogger().setLevel(logging.INFO)
 
 SYSTEM_PROMPT = """You are a healthcare research assistant. Your role is to:
 
@@ -100,7 +111,7 @@ class HealthcareResearchAgent:
 server = Server()
 
 @server.agent(
-    name="ResearchAgent",
+    name="HealthcareResearchAgent",
     detail=AgentDetail(
         interaction_mode="multi-turn",
         # Add enviorment variables through the CLI so the agent has the credentials it needs to use its tools
@@ -143,7 +154,7 @@ async def healthcare_research_wrapper(
     llm: Annotated[
         LLMServiceExtensionServer, 
         LLMServiceExtensionSpec.single_demand(
-            suggested=("google/gemini-2.0-flash-exp",)
+            suggested=("google/gemini-3-flash-preview",)
         )
     ],
 ):
@@ -151,6 +162,7 @@ async def healthcare_research_wrapper(
     
     await context.store(input)
     prompt = get_message_text(input)
+    logger.info(f"Received prompt: {prompt}")
 
     if not prompt:
         yield AgentMessage(text="No input provided.")
