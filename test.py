@@ -1,4 +1,5 @@
 import logging
+import asyncio
 from dotenv import load_dotenv
 from research_agent.agentstack_reserach import HealthcareResearchAgent
 
@@ -12,7 +13,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def test_agent():
+async def test_agent():
     """Test the Healthcare Research Agent"""
     
     # Initialize agent
@@ -33,7 +34,7 @@ def test_agent():
         logger.info(f"{'='*60}")
         
         try:
-            response = agent.ask(
+            response = await agent.ask_async(
                 query=query,
                 user_id="test_user",
                 session_id=f"test_session_{i}"
@@ -45,4 +46,4 @@ def test_agent():
             logger.error(f"\n❌ Error: {e}\n")
 
 if __name__ == "__main__":
-    test_agent()
+    asyncio.run(test_agent())

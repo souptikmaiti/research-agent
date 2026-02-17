@@ -47,12 +47,7 @@ Be concise, accurate, and empathetic in your responses."""
 
 class HealthcareResearchAgent:
     def __init__(self, model: str = "gemini-3-flash-preview", temperature: float = 0.2):
-        """Initialize the Healthcare Research Agent.
-        
-        Args:
-            model: The Gemini model to use
-            temperature: Temperature for response generation (0.0-1.0)
-        """
+        """Initialize the Healthcare Research Agent."""
         self.agent = LlmAgent(
             model=model,
             name="HealthcareResearchAgent",
@@ -64,26 +59,16 @@ class HealthcareResearchAgent:
         
         logger.info(f"Initialized HealthcareResearchAgent with model={model}, temperature={temperature}")
     
-    def ask(self, query: str, user_id: str = "user", session_id: str = "default") -> str:
-        """Ask the agent a healthcare-related question.
-        
-        Args:
-            query: The user's question
-            user_id: User identifier
-            session_id: Session identifier
-            
-        Returns:
-            The agent's final response text
-        """
-        # Initialize session service and runner
+    async def ask_async(self, query: str, user_id: str = "user", session_id: str = "default") -> str:
+        """Ask the agent a healthcare-related question (async version)."""
         session_service = InMemorySessionService()
         
-        # Create session (handle async)
-        asyncio.run(session_service.create_session(
+        # Create session asynchronously
+        await session_service.create_session(
             app_name="healthcare",
             user_id=user_id,
             session_id=session_id
-        ))
+        )
         
         runner = Runner(agent=self.agent, app_name="healthcare", session_service=session_service)
         
@@ -150,7 +135,7 @@ server = Server()
         ),
     ],
 )
-async def google_search_agent(
+async def healthcare_research_wrapper(
     input: Message,
     context: RunContext,
     trajectory: Annotated[TrajectoryExtensionServer, TrajectoryExtensionSpec()],
@@ -164,41 +149,34 @@ async def google_search_agent(
 ):
     """Healthcare research assistant"""
     
-    # Record the incoming message to context history
     await context.store(input)
-
     prompt = get_message_text(input)
 
     if not prompt:
         yield AgentMessage(text="No input provided.")
         return
     
-    # Record the incoming message to trajectory
     yield trajectory.trajectory_metadata(title="User Query", content=f"Received: '{prompt}'")
 
-    # Select the default LLM fulfillment from the extension
     if llm and llm.data and llm.data.llm_fulfillments:
         llm_config = llm.data.llm_fulfillments.get("default")
     else:
         yield AgentMessage(text="LLM selection is required.")
         return
 
-    # Ensure we have a valid LLM config to create the client
     if not llm_config:
         yield AgentMessage(text="No LLM configuration available from the extension.")
         return
     
-    yield trajectory.trajectory_metadata(title="Agent Setup", content="Initializing RequirementAgent with Google search")
+    yield trajectory.trajectory_metadata(title="Agent Setup", content="Initializing HealthcareResearchAgent with Google search")
     
-    # Create agent instance with the selected model
     agent = HealthcareResearchAgent(model=llm_config.api_model, temperature=0.2)
     
-    # Get unique session ID from context
     session_id = context.run_id or "default"
     user_id = "user"
     
-    # Ask the agent and stream the response
-    response = agent.ask(prompt, user_id=user_id, session_id=session_id)
+    # Use async version
+    response = await agent.ask_async(prompt, user_id=user_id, session_id=session_id)
     yield AgentMessage(text=response)
 
 def run():
