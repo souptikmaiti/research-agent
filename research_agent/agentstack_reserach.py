@@ -32,17 +32,54 @@ load_dotenv()
 
 # Configure logging
 # Configure logging to output to stdout
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s | %(levelname)s | %(name)s | %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ],
-    force=True  # Override any existing configuration
-)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("healthcare-research-agent")
 # set root logger
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.DEBUG)
+
+# Custom logging configuration
+LOGGING_CONFIG = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "format": "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+        },
+    },
+    "handlers": {
+        "default": {
+            "formatter": "default",
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+        },
+    },
+    "loggers": {
+        "": {  # root logger
+            "handlers": ["default"],
+            "level": "INFO",
+        },
+        "uvicorn": {
+            "handlers": ["default"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "uvicorn.error": {
+            "handlers": ["default"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "uvicorn.access": {
+            "handlers": ["default"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "healthcare-research-agent": {  # Your app logger
+            "handlers": ["default"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+    },
+}
+
 
 SYSTEM_PROMPT = """You are a healthcare research assistant. Your role is to:
 
@@ -83,20 +120,19 @@ class HealthcareResearchAgent:
         
         runner = Runner(agent=self.agent, app_name="healthcare", session_service=session_service)
 
-        print(f"ADK Runner created")
-        
         logger.info(f"Received query: {query}")
         
         content = types.Content(role="user", parts=[types.Part(text=query)])
-
-        print(f"ADK content created" + str(content))
         
         try:
-            for event in runner.run(
+            # Use run_async instead of run
+            events_async = runner.run_async(
                 user_id=user_id,
                 session_id=session_id,
                 new_message=content
-            ):
+            )
+            
+            async for event in events_async:
                 logger.debug(f"Event: {event}")
                 
                 if event.is_final_response() and event.content:
@@ -105,7 +141,7 @@ class HealthcareResearchAgent:
                     return final_answer
         
         except Exception as e:
-            logger.error(f"ERROR during agent run: {e}")
+            logger.error(f"ERROR during agent run: {e}", exc_info=True)
             raise
         
         return "No response generated."
@@ -202,6 +238,7 @@ def run():
         port=8000, 
         context_store=PlatformContextStore(),
         configure_logger=False,  # Don't let server override our logging config
+        log_config=LOGGING_CONFIG,
         log_level="debug",
         access_log=True
     )
