@@ -229,4 +229,4 @@ async def google_search_agent(
     yield AgentMessage(text=response)
 
 def run():
-    server.run(host="127.0.0.1", port=8001, context_store=PlatformContextStore())
+    server.run(host="127.0.0.1", port=8000, context_store=PlatformContextStore())
