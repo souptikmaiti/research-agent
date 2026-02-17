@@ -154,13 +154,14 @@ server = Server()
             )
         ],
         user_greeting="Hi! I'm a Health Research Agent using Google search.",
-        version="1.0.0",
+        # version="1.0.0",
         tools=[
             AgentDetailTool(
                 name="Google Search", 
                 description="Intelligent web search powered by Google Search. Automatically extracts optimal search terms from conversational queries."
             )
-        ]
+        ],
+        framework="google-adk"
     ),
     skills=[
         AgentSkill(
@@ -175,7 +176,6 @@ server = Server()
             ]
         ),
     ],
-    frameWork="google-adk",
 )
 async def google_search_agent(
     input: Message,
