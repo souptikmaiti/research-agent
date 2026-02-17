@@ -82,10 +82,14 @@ class HealthcareResearchAgent:
         )
         
         runner = Runner(agent=self.agent, app_name="healthcare", session_service=session_service)
+
+        print(f"ADK Runner created")
         
         logger.info(f"Received query: {query}")
         
         content = types.Content(role="user", parts=[types.Part(text=query)])
+
+        print(f"ADK content created" + str(content))
         
         try:
             for event in runner.run(
@@ -163,6 +167,7 @@ async def healthcare_research_wrapper(
     await context.store(input)
     prompt = get_message_text(input)
     logger.info(f"Received prompt: {prompt}")
+    print(f"Received prompt: {prompt}")
 
     if not prompt:
         yield AgentMessage(text="No input provided.")
@@ -192,4 +197,11 @@ async def healthcare_research_wrapper(
     yield AgentMessage(text=response)
 
 def run():
-    server.run(host="127.0.0.1", port=8000, context_store=PlatformContextStore())
+    server.run(
+        host="127.0.0.1", 
+        port=8000, 
+        context_store=PlatformContextStore(),
+        configure_logger=False,  # Don't let server override our logging config
+        log_level="debug",
+        access_log=True
+    )
