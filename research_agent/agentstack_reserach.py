@@ -55,7 +55,7 @@ class HealthcareResearchAgent:
 
         # Strip 'gemini:models/' prefix if present
         if model.startswith("gemini:models/"):
-            model = model.replace("gemini:models/", "models/")
+            model = model.replace("gemini:models/", "")
         elif model.startswith("gemini:"):
             model = model.replace("gemini:", "")
 
